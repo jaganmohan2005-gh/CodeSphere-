@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In – CodeSphere{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-5">
+      <div class="card-cs shadow-md">
+        <div class="card-cs-body p-4 p-md-5">
+          <div class="text-center mb-4">
+            <div class="brand-badge mb-3 d-inline-flex px-3 py-2">
+              <i class="bi bi-code-square fs-4"></i>
+              <span class="fs-5">CodeSphere</span>
+            </div>
+            <h4 class="fw-bold text-dark">Welcome Back</h4>
+            <p class="text-muted small">Sign in to continue your placement preparation journey</p>
+          </div>
+
+          <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}">
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-secondary">{{ form.email_or_username.label.text }}</label>
+              {{ form.email_or_username(class="form-control", placeholder="username or student@example.com", autofocus=True) }}
+              {% for error in form.email_or_username.errors %}
+                <div class="text-danger small mt-1">{{ error }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <label class="form-label small fw-semibold text-secondary">{{ form.password.label.text }}</label>
+                <a href="{{ url_for('auth.forgot_password') }}" class="small text-decoration-none">Forgot password?</a>
+              </div>
+              {{ form.password(class="form-control", placeholder="••••••••") }}
+              {% for error in form.password.errors %}
+                <div class="text-danger small mt-1">{{ error }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="mb-3 form-check">
+              {{ form.remember_me(class="form-check-input") }}
+              <label class="form-check-label small text-muted" for="{{ form.remember_me.id }}">Remember this browser</label>
+            </div>
+
+            <div class="d-grid mb-3">
+              {{ form.submit(class="btn btn-primary-cs py-2") }}
+            </div>
+          </form>
+
+          <div class="card bg-light border-0 p-3 mb-3" style="font-size:0.8rem;">
+            <div class="fw-bold text-secondary mb-1"><i class="bi bi-info-circle me-1"></i> Demo Credentials:</div>
+            <div><strong>Student:</strong> <code>student</code> / <code>Student@CodeSphere2026!</code></div>
+            <div><strong>Admin:</strong> <code>admin</code> / <code>Admin@CodeSphere2026!</code> (<a href="{{ url_for('auth.admin_login') }}">Admin Portal</a>)</div>
+          </div>
+
+          <div class="text-center pt-2">
+            <span class="text-muted small">Don't have an account yet?</span>
+            <a href="{{ url_for('auth.register') }}" class="fw-semibold text-primary small text-decoration-none ms-1">Create Student Account</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

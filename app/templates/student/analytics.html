@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Performance Analytics – CodeSphere{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <!-- Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h3 class="fw-bold mb-1 text-dark">Personal Performance Analytics</h3>
+      <p class="text-muted small mb-0">Track your coding proficiency, assessment milestones, and weak topics</p>
+    </div>
+    <div>
+      <a href="{{ url_for('ai.assistant') }}#study-plan" class="btn btn-primary-cs btn-sm">
+        <i class="bi bi-calendar-check me-1"></i> Generate AI Placement Study Plan
+      </a>
+    </div>
+  </div>
+
+  <!-- KPI Metrics Grid -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-title">Questions Attempted</div>
+        <div class="kpi-value">{{ metrics.total_attempted }}</div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card kpi-success">
+        <div class="kpi-title">Questions Solved</div>
+        <div class="kpi-value">{{ metrics.total_solved }}</div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card kpi-cyan">
+        <div class="kpi-title">Overall Accuracy</div>
+        <div class="kpi-value">{{ metrics.accuracy_percentage }}%</div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card kpi-purple">
+        <div class="kpi-title">Avg Assessment Score</div>
+        <div class="kpi-value">{{ metrics.avg_assessment_score }}%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visual Charts Row -->
+  <div class="row g-4 mb-4">
+    <!-- Accuracy Doughnut Chart -->
+    <div class="col-lg-4">
+      <div class="card-cs h-100">
+        <div class="card-cs-header">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart text-primary me-2"></i> Problem Solving Mastery</h6>
+        </div>
+        <div class="card-cs-body d-flex flex-column align-items-center justify-content-center">
+          <div style="max-width: 250px; width: 100%;">
+            <canvas id="accuracyDoughnutChart"></canvas>
+          </div>
+          <div class="text-center mt-3 small text-muted">
+            <span class="fw-bold text-dark">{{ metrics.total_solved }}</span> solved out of <span class="fw-bold text-dark">{{ metrics.total_attempted }}</span> attempted problems
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Topic Accuracy Bar Chart -->
+    <div class="col-lg-8">
+      <div class="card-cs h-100">
+        <div class="card-cs-header">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart-line text-primary me-2"></i> Topic-Wise Accuracy & Solved Count</h6>
+        </div>
+        <div class="card-cs-body">
+          <canvas id="topicPerformanceBarChart" style="max-height: 280px;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assessment Progression Line Chart & Strengths / Weaknesses -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-8">
+      <div class="card-cs h-100">
+        <div class="card-cs-header">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-graph-up-arrow text-primary me-2"></i> Assessment Score Progression Over Time</h6>
+        </div>
+        <div class="card-cs-body">
+          <canvas id="assessmentHistoryLineChart" style="max-height: 260px;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <!-- Weak Topics Card -->
+      <div class="card-cs mb-3 border-warning">
+        <div class="card-cs-header bg-warning-subtle text-warning-emphasis">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i> Weak Topics Identified</h6>
+        </div>
+        <div class="card-cs-body">
+          {% if metrics.weak_topics %}
+            <p class="small text-muted mb-2">Practice these topics to elevate your placement screening score:</p>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              {% for wt in metrics.weak_topics %}
+                <span class="badge badge-warning-soft fs-6 py-1 px-2">{{ wt }}</span>
+              {% endfor %}
+            </div>
+            <a href="{{ url_for('student.practice_list') }}" class="btn btn-outline-warning btn-sm w-100">
+              Solve Weak Topic Questions
+            </a>
+          {% else %}
+            <div class="text-muted small text-center py-2">
+              <i class="bi bi-shield-check text-success fs-4 d-block mb-1"></i>
+              No weak areas detected! Keep up the momentum.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Strong Topics Card -->
+      <div class="card-cs border-success">
+        <div class="card-cs-header bg-success-subtle text-success-emphasis">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-patch-check-fill me-2"></i> Strong Mastery Topics</h6>
+        </div>
+        <div class="card-cs-body">
+          {% if metrics.strong_topics %}
+            <div class="d-flex flex-wrap gap-2">
+              {% for st in metrics.strong_topics %}
+                <span class="badge badge-success-soft fs-6 py-1 px-2">{{ st }}</span>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-muted small text-center py-2">
+              Solve 3+ questions in a category with >70% accuracy to earn strong topic mastery.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Assessment History Table -->
+  <div class="card-cs">
+    <div class="card-cs-header">
+      <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history text-primary me-2"></i> Assessment Performance Records</h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table-cs mb-0">
+        <thead>
+          <tr>
+            <th>Assessment Title</th>
+            <th>Difficulty</th>
+            <th>Duration</th>
+            <th>Your Score</th>
+            <th>Percentage</th>
+            <th>Outcome</th>
+            <th>Submitted At</th>
+            <th class="text-end">Report</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if metrics.assessment_history %}
+            {% for att in metrics.assessment_history %}
+              <tr>
+                <td><strong>{{ att.assessment.title }}</strong></td>
+                <td><span class="badge badge-diff-{{ att.assessment.difficulty|lower }}">{{ att.assessment.difficulty }}</span></td>
+                <td>{{ att.assessment.duration_minutes }} mins</td>
+                <td class="fw-bold">{{ att.total_score }} / {{ att.max_possible_score }}</td>
+                <td>
+                  <span class="fw-bold {% if att.is_passed %}text-success{% else %}text-danger{% endif %}">
+                    {{ att.percentage }}%
+                  </span>
+                </td>
+                <td>
+                  {% if att.is_passed %}
+                    <span class="badge badge-success-soft"><i class="bi bi-check-lg me-1"></i> PASSED</span>
+                  {% else %}
+                    <span class="badge badge-danger-soft"><i class="bi bi-x-lg me-1"></i> FAILED</span>
+                  {% endif %}
+                </td>
+                <td class="small text-muted">{{ att.submitted_at.strftime('%b %d, %Y %H:%M') if att.submitted_at else 'In Progress' }}</td>
+                <td class="text-end">
+                  <a href="{{ url_for('assessment.view_result', attempt_id=att.id) }}" class="btn btn-outline-cs btn-sm">
+                    View Breakdown
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="8" class="text-center py-5 text-muted">
+                You haven't completed any assessments yet. <a href="{{ url_for('assessment.list_assessments') }}">Take an assessment now!</a>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/analytics_charts.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const studentMetrics = {
+      total_solved: {{ metrics.total_solved }},
+      total_attempted: {{ metrics.total_attempted }},
+      topic_performance: {{ metrics.topic_performance|tojson }},
+      assessment_history: [
+        {% for a in metrics.assessment_history %}
+          {
+            id: {{ a.id }},
+            percentage: {{ a.percentage }},
+            assessment: { title: "{{ a.assessment.title|e }}" }
+          }{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ]
+    };
+    window.renderStudentAnalyticsCharts(studentMetrics);
+  });
+</script>
+{% endblock %}

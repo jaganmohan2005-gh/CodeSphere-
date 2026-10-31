@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Practice Problem Bank – CodeSphere{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <!-- Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h3 class="fw-bold mb-1 text-dark">Practice Problem Bank</h3>
+      <p class="text-muted small mb-0">Master placement interview algorithms across all core data structure topics</p>
+    </div>
+  </div>
+
+  <!-- Search & Category Filters -->
+  <div class="card-cs mb-4">
+    <div class="card-cs-body py-3">
+      <form method="GET" action="{{ url_for('student.practice_list') }}" class="row g-2 align-items-center">
+        <div class="col-md-5 col-lg-4">
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+            <input type="text" name="q" class="form-control border-start-0" placeholder="Search problems by name..." value="{{ search_query }}">
+          </div>
+        </div>
+
+        <div class="col-md-3 col-lg-3">
+          <select name="category" class="form-select" onchange="this.form.submit()">
+            <option value="">All Categories</option>
+            {% for cat in categories %}
+              <option value="{{ cat.slug }}" {% if selected_cat == cat.slug %}selected{% endif %}>{{ cat.name }} ({{ cat.question_count }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2 col-lg-2">
+          <select name="difficulty" class="form-select" onchange="this.form.submit()">
+            <option value="">All Difficulties</option>
+            <option value="Easy" {% if selected_diff == 'Easy' %}selected{% endif %}>Easy</option>
+            <option value="Medium" {% if selected_diff == 'Medium' %}selected{% endif %}>Medium</option>
+            <option value="Hard" {% if selected_diff == 'Hard' %}selected{% endif %}>Hard</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary-cs btn-sm w-100 py-2">Filter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Category Quick Badges -->
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    <a href="{{ url_for('student.practice_list') }}" class="badge rounded-pill {% if not selected_cat %}bg-primary text-white{% else %}bg-white text-secondary border{% endif %} text-decoration-none py-2 px-3">
+      All Topics
+    </a>
+    {% for cat in categories[:10] %}
+      <a href="{{ url_for('student.practice_list', category=cat.slug) }}" class="badge rounded-pill {% if selected_cat == cat.slug %}bg-primary text-white{% else %}bg-white text-secondary border{% endif %} text-decoration-none py-2 px-3">
+        <i class="bi {{ cat.icon }} me-1"></i> {{ cat.name }}
+      </a>
+    {% endfor %}
+  </div>
+
+  <!-- Questions Table -->
+  <div class="card-cs">
+    <div class="table-responsive">
+      <table class="table-cs mb-0">
+        <thead>
+          <tr>
+            <th style="width: 50px;">Status</th>
+            <th>Problem Title</th>
+            <th>Category</th>
+            <th>Difficulty</th>
+            <th>Expected Complexity</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if questions %}
+            {% for q in questions %}
+              <tr>
+                <td class="text-center">
+                  {% if q.id in solved_q_ids %}
+                    <i class="bi bi-check-circle-fill text-success fs-5" title="Solved and Accepted"></i>
+                  {% else %}
+                    <i class="bi bi-circle text-muted" title="Not yet solved"></i>
+                  {% endif %}
+                </td>
+                <td>
+                  <a href="{{ url_for('student.practice_solve', slug=q.slug) }}" class="fw-bold text-dark text-decoration-none">
+                    {{ q.title }}
+                  </a>
+                </td>
+                <td>
+                  <span class="badge badge-primary-soft">
+                    <i class="bi {{ q.category.icon }} me-1"></i> {{ q.category.name }}
+                  </span>
+                </td>
+                <td>
+                  {% if q.difficulty == 'Easy' %}
+                    <span class="badge badge-diff-easy">Easy</span>
+                  {% elif q.difficulty == 'Medium' %}
+                    <span class="badge badge-diff-medium">Medium</span>
+                  {% else %}
+                    <span class="badge badge-diff-hard">Hard</span>
+                  {% endif %}
+                </td>
+                <td class="font-monospace small text-muted">
+                  {{ q.time_complexity_expected or 'O(N)' }} &bull; {{ q.space_complexity_expected or 'O(1)' }}
+                </td>
+                <td class="text-end">
+                  <a href="{{ url_for('student.practice_solve', slug=q.slug) }}" class="btn btn-outline-cs btn-sm">
+                    {% if q.id in solved_q_ids %}Solve Again{% else %}Solve Challenge{% endif %}
+                    <i class="bi bi-arrow-right ms-1"></i>
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="6" class="text-center py-5 text-muted">
+                No coding questions match the selected filter. Try selecting 'All Categories'.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

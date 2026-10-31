@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard – CodeSphere{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <!-- Welcome Banner -->
+  <div class="card-cs mb-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff;">
+    <div class="card-cs-body p-4 p-md-5 d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div>
+        <div class="badge bg-primary-subtle text-primary border border-primary-subtle mb-2">
+          <i class="bi bi-mortarboard-fill me-1"></i> Target: {{ current_user.profile.target_role or 'Software Engineer' }}
+        </div>
+        <h2 class="fw-bold mb-1">Welcome back, {{ current_user.profile.full_name or current_user.username }}!</h2>
+        <p class="text-secondary mb-0" style="max-width: 600px;">
+          Sharpen your algorithmic problem solving, attempt timed placement assessments, and level up with personalized AI tutoring.
+        </p>
+      </div>
+
+      <div class="d-flex gap-2">
+        <a href="{{ url_for('student.practice_list') }}" class="btn btn-primary-cs">
+          <i class="bi bi-code-slash me-1"></i> Practice Problems
+        </a>
+        <a href="{{ url_for('ai.assistant') }}" class="btn btn-outline-light">
+          <i class="bi bi-stars text-info me-1"></i> Ask AI Tutor
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active In-Progress Assessment Banner (if any) -->
+  {% if active_attempt %}
+    <div class="alert alert-warning border-warning shadow-sm d-flex flex-wrap justify-content-between align-items-center p-3 mb-4 gap-2" role="alert">
+      <div class="d-flex align-items-center gap-3">
+        <div class="rounded-circle bg-warning text-dark p-2 d-flex align-items-center justify-content-center">
+          <i class="bi bi-stopwatch-fill fs-4"></i>
+        </div>
+        <div>
+          <h6 class="fw-bold mb-0 text-dark">You have an in-progress assessment: {{ active_attempt.assessment.title }}</h6>
+          <small class="text-secondary">Your server timer is currently running. Answers are autosaved automatically.</small>
+        </div>
+      </div>
+      <div>
+        <a href="{{ url_for('assessment.take_assessment', attempt_id=active_attempt.id) }}" class="btn btn-warning fw-bold btn-sm px-4">
+          <i class="bi bi-play-circle-fill me-1"></i> Resume Assessment
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Student KPI Metrics -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-title">Questions Attempted</div>
+        <div class="kpi-value">{{ analytics.total_attempted }}</div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card kpi-success">
+        <div class="kpi-title">Questions Solved</div>
+        <div class="kpi-value">{{ analytics.total_solved }}</div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card kpi-cyan">
+        <div class="kpi-title">Accuracy Rate</div>
+        <div class="kpi-value">{{ analytics.accuracy_percentage }}%</div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card kpi-purple">
+        <div class="kpi-title">Assessments Taken</div>
+        <div class="kpi-value">{{ analytics.assessments_taken }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left Column: Available Assessments & Weak Topics -->
+    <div class="col-lg-8">
+      <!-- Available Assessments -->
+      <div class="card-cs mb-4">
+        <div class="card-cs-header d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-award text-primary me-2"></i> Timed Assessments</h6>
+          <a href="{{ url_for('assessment.list_assessments') }}" class="small text-decoration-none">View All</a>
+        </div>
+        <div class="card-cs-body">
+          {% if available_assessments %}
+            <div class="row g-3">
+              {% for asm in available_assessments[:3] %}
+                <div class="col-md-6 col-xl-12">
+                  <div class="card p-3 border">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                      <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                          <h6 class="fw-bold mb-0 text-dark">{{ asm.title }}</h6>
+                          <span class="badge badge-diff-{{ asm.difficulty|lower }}">{{ asm.difficulty }}</span>
+                        </div>
+                        <div class="text-muted small">
+                          <span><i class="bi bi-clock me-1"></i> {{ asm.duration_minutes }} mins</span>
+                          <span class="mx-2">&bull;</span>
+                          <span><i class="bi bi-list-check me-1"></i> {{ asm.question_count }} questions</span>
+                          <span class="mx-2">&bull;</span>
+                          <span><i class="bi bi-award me-1"></i> {{ asm.total_marks }} marks</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <form method="POST" action="{{ url_for('assessment.start_assessment', assessment_id=asm.id) }}">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                          <button type="submit" class="btn btn-primary-cs btn-sm">
+                            <i class="bi bi-play-fill me-1"></i> Start Assessment
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center py-4 text-muted">No assessments currently published.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Recent Submissions History -->
+      <div class="card-cs">
+        <div class="card-cs-header d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history text-primary me-2"></i> Recent Problem Submissions</h6>
+          <a href="{{ url_for('student.submissions_history') }}" class="small text-decoration-none">Full History</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table-cs mb-0">
+            <thead>
+              <tr>
+                <th>Problem</th>
+                <th>Language</th>
+                <th>Status</th>
+                <th>Runtime</th>
+                <th>Submitted</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if analytics.recent_submissions %}
+                {% for sub in analytics.recent_submissions[:5] %}
+                  <tr>
+                    <td>
+                      <a href="{{ url_for('student.practice_solve', slug=sub.question.slug) }}" class="fw-bold text-dark text-decoration-none">
+                        {{ sub.question.title }}
+                      </a>
+                    </td>
+                    <td><span class="badge bg-light text-dark font-monospace">{{ sub.language|capitalize }}</span></td>
+                    <td>
+                      {% if sub.status == 'Accepted' %}
+                        <span class="badge badge-success-soft"><i class="bi bi-check-lg me-1"></i> Accepted</span>
+                      {% elif sub.status == 'Wrong Answer' %}
+                        <span class="badge badge-danger-soft">Wrong Answer</span>
+                      {% else %}
+                        <span class="badge badge-warning-soft">{{ sub.status }}</span>
+                      {% endif %}
+                    </td>
+                    <td class="font-monospace small">{{ sub.execution_time_ms }} ms</td>
+                    <td class="text-muted small">{{ sub.submitted_at.strftime('%b %d, %H:%M') }}</td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="5" class="text-center py-4 text-muted">
+                    You haven't submitted any solutions yet. <a href="{{ url_for('student.practice_list') }}">Start practicing now!</a>
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Learning Guidance & Weak Topics -->
+    <div class="col-lg-4">
+      <!-- AI Tutor Prompt Card -->
+      <div class="card-cs mb-4 border-primary">
+        <div class="card-cs-header bg-primary text-white">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-stars me-1"></i> Intelligent Placement Mentor</h6>
+        </div>
+        <div class="card-cs-body">
+          <p class="small text-muted mb-3">
+            Need help with a tricky algorithmic pattern or debugging your runtime error? CodeSphere AI Assistant is ready 24/7.
+          </p>
+          <div class="d-grid gap-2">
+            <a href="{{ url_for('ai.assistant') }}" class="btn btn-outline-primary btn-sm text-start py-2">
+              <i class="bi bi-chat-dots me-2"></i> Ask Concept Explanation
+            </a>
+            <a href="{{ url_for('ai.assistant') }}#study-plan" class="btn btn-outline-primary btn-sm text-start py-2">
+              <i class="bi bi-calendar-check me-2"></i> Generate AI Study Roadmap
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weak Topic Identification -->
+      <div class="card-cs">
+        <div class="card-cs-header">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-exclamation-triangle text-warning me-2"></i> Focus Areas & Weak Topics</h6>
+        </div>
+        <div class="card-cs-body">
+          {% if analytics.weak_topics %}
+            <p class="small text-muted">Based on your recent accuracy, dedicating extra practice to these topics will yield the highest score gains:</p>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              {% for topic in analytics.weak_topics %}
+                <span class="badge badge-warning-soft fs-6 py-2 px-3">
+                  <i class="bi bi-arrow-up-right me-1"></i> {{ topic }}
+                </span>
+              {% endfor %}
+            </div>
+            <a href="{{ url_for('student.practice_list') }}" class="btn btn-outline-cs btn-sm w-100">
+              Practice Focus Topics
+            </a>
+          {% else %}
+            <div class="text-center py-3">
+              <i class="bi bi-check-circle-fill text-success fs-2 d-block mb-2"></i>
+              <h6 class="fw-bold mb-1">Great Job!</h6>
+              <p class="small text-muted mb-0">No critical weak topics flagged. Continue solving higher difficulty problems.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

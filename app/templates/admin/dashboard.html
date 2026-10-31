@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard – CodeSphere{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <!-- Header Bar -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h3 class="fw-bold mb-1 text-dark">Platform Administration</h3>
+      <p class="text-muted small mb-0">Real-time metrics, active assessments, and student progress oversight</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('admin.question_create') }}" class="btn btn-outline-cs btn-sm">
+        <i class="bi bi-plus-lg me-1"></i> New Question
+      </a>
+      <a href="{{ url_for('admin.assessment_create') }}" class="btn btn-primary-cs btn-sm">
+        <i class="bi bi-award me-1"></i> New Assessment
+      </a>
+    </div>
+  </div>
+
+  <!-- KPI Metrics Grid (Calculated from actual database records) -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="kpi-title">Registered Students</div>
+            <div class="kpi-value">{{ stats.total_students }}</div>
+          </div>
+          <div class="kpi-icon bg-primary-subtle text-primary">
+            <i class="bi bi-people-fill"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card kpi-cyan">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="kpi-title">Coding Questions</div>
+            <div class="kpi-value">{{ stats.total_questions }}</div>
+          </div>
+          <div class="kpi-icon bg-info-subtle text-info">
+            <i class="bi bi-journal-code"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card kpi-purple">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="kpi-title">Total Assessments</div>
+            <div class="kpi-value">{{ stats.total_assessments }}</div>
+          </div>
+          <div class="kpi-icon bg-purple-soft text-purple">
+            <i class="bi bi-award-fill"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card kpi-success">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="kpi-title">Avg Student Score</div>
+            <div class="kpi-value">{{ stats.avg_student_score }}%</div>
+          </div>
+          <div class="kpi-icon bg-success-subtle text-success">
+            <i class="bi bi-trophy-fill"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="row g-3 mb-4">
+    <!-- Difficulty Breakdown Doughnut -->
+    <div class="col-lg-4">
+      <div class="card-cs h-100">
+        <div class="card-cs-header">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart text-primary me-2"></i> Question Difficulty</h6>
+        </div>
+        <div class="card-cs-body d-flex flex-column align-items-center justify-content-center">
+          <div style="max-width: 260px; width: 100%;">
+            <canvas id="adminDifficultyChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Distribution Bar -->
+    <div class="col-lg-8">
+      <div class="card-cs h-100">
+        <div class="card-cs-header">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart text-primary me-2"></i> Questions by Topic Category</h6>
+        </div>
+        <div class="card-cs-body">
+          <canvas id="adminCategoryChart" style="max-height: 280px;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity Tables -->
+  <div class="row g-3">
+    <!-- Recent Submissions -->
+    <div class="col-lg-7">
+      <div class="card-cs">
+        <div class="card-cs-header">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history text-primary me-2"></i> Recent Student Submissions</h6>
+        </div>
+        <div class="table-responsive">
+          <table class="table-cs mb-0">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Problem</th>
+                <th>Status</th>
+                <th>Runtime</th>
+                <th>Submitted</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if stats.recent_submissions %}
+                {% for sub in stats.recent_submissions %}
+                  <tr>
+                    <td><strong>{{ sub.user.username }}</strong></td>
+                    <td>{{ sub.question.title }}</td>
+                    <td>
+                      {% if sub.status == 'Accepted' %}
+                        <span class="badge badge-success-soft">Accepted</span>
+                      {% elif sub.status == 'Wrong Answer' %}
+                        <span class="badge badge-danger-soft">Wrong Answer</span>
+                      {% else %}
+                        <span class="badge badge-warning-soft">{{ sub.status }}</span>
+                      {% endif %}
+                    </td>
+                    <td class="font-monospace small">{{ sub.execution_time_ms }} ms</td>
+                    <td class="text-muted small">{{ sub.submitted_at.strftime('%b %d, %H:%M') }}</td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="5" class="text-center py-4 text-muted">No student submissions recorded yet.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Assessment Attempts -->
+    <div class="col-lg-5">
+      <div class="card-cs">
+        <div class="card-cs-header">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-check2-circle text-primary me-2"></i> Recent Assessment Attempts</h6>
+        </div>
+        <div class="table-responsive">
+          <table class="table-cs mb-0">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Assessment</th>
+                <th>Score</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if stats.recent_attempts %}
+                {% for att in stats.recent_attempts %}
+                  <tr>
+                    <td><strong>{{ att.user.username }}</strong></td>
+                    <td class="small">{{ att.assessment.title[:25] }}...</td>
+                    <td>
+                      <span class="fw-bold {% if att.is_passed %}text-success{% else %}text-danger{% endif %}">
+                        {{ att.percentage }}%
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge badge-soft {% if att.status == 'completed' %}badge-success-soft{% elif att.status == 'timed_out' %}badge-warning-soft{% else %}badge-primary-soft{% endif %}">
+                        {{ att.status }}
+                      </span>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-muted">No assessment attempts recorded yet.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/analytics_charts.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const adminData = {
+      difficulty_breakdown: {{ stats.difficulty_breakdown|tojson }},
+      category_stats: {{ stats.category_stats|tojson }}
+    };
+    window.renderAdminDashboardCharts(adminData);
+  });
+</script>
+{% endblock %}

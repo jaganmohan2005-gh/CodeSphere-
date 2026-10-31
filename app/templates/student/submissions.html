@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Submission History – CodeSphere{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h3 class="fw-bold mb-1 text-dark">Submission History</h3>
+      <p class="text-muted small mb-0">Complete record of your practice solutions and test case outcomes</p>
+    </div>
+    <div>
+      <a href="{{ url_for('student.practice_list') }}" class="btn btn-primary-cs btn-sm">
+        <i class="bi bi-code-slash me-1"></i> Practice Problems
+      </a>
+    </div>
+  </div>
+
+  <div class="card-cs">
+    <div class="table-responsive">
+      <table class="table-cs mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Problem Title</th>
+            <th>Language</th>
+            <th>Status</th>
+            <th>Tests Passed</th>
+            <th>Execution Time</th>
+            <th>Submitted At</th>
+            <th class="text-end">Code</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if submissions %}
+            {% for sub in submissions %}
+              <tr>
+                <td class="text-muted small">{{ sub.id }}</td>
+                <td>
+                  <a href="{{ url_for('student.practice_solve', slug=sub.question.slug) }}" class="fw-bold text-dark text-decoration-none">
+                    {{ sub.question.title }}
+                  </a>
+                </td>
+                <td><span class="badge bg-light text-dark font-monospace">{{ sub.language|capitalize }}</span></td>
+                <td>
+                  {% if sub.status == 'Accepted' %}
+                    <span class="badge badge-success-soft"><i class="bi bi-check-lg me-1"></i> Accepted</span>
+                  {% elif sub.status == 'Wrong Answer' %}
+                    <span class="badge badge-danger-soft">Wrong Answer</span>
+                  {% elif sub.status == 'Time Limit Exceeded' %}
+                    <span class="badge badge-warning-soft">TLE</span>
+                  {% else %}
+                    <span class="badge badge-secondary-soft">{{ sub.status }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="fw-semibold {% if sub.is_accepted %}text-success{% else %}text-secondary{% endif %}">
+                    {{ sub.tests_passed }} / {{ sub.tests_total }}
+                  </span>
+                </td>
+                <td class="font-monospace small">{{ sub.execution_time_ms }} ms</td>
+                <td class="text-muted small">{{ sub.submitted_at.strftime('%b %d, %Y %H:%M') }}</td>
+                <td class="text-end">
+                  <button type="button" class="btn btn-outline-cs btn-sm" data-bs-toggle="modal" data-bs-target="#subModal{{ sub.id }}">
+                    <i class="bi bi-code me-1"></i> View Code
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Code View Modal -->
+              <div class="modal fade" id="subModal{{ sub.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                  <div class="modal-content">
+                    <div class="modal-header bg-dark text-white">
+                      <h6 class="modal-title fw-bold">
+                        {{ sub.question.title }} &bull; Submission #{{ sub.id }}
+                        <span class="badge {{ 'bg-success' if sub.is_accepted else 'bg-danger' }} ms-2">{{ sub.status }}</span>
+                      </h6>
+                      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                      <pre class="bg-dark text-light p-3 mb-0 font-monospace" style="font-size:0.85rem; max-height: 400px; overflow-y:auto;"><code>{{ sub.source_code }}</code></pre>
+                    </div>
+                    <div class="modal-footer py-2">
+                      <span class="text-muted small me-auto">{{ sub.execution_time_ms }} ms &bull; {{ sub.submitted_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="8" class="text-center py-5 text-muted">
+                No code submissions recorded yet. Start solving problems from the practice catalog!
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

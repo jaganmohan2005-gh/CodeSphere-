@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied (403) – CodeSphere{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center">
+  <div class="card-cs p-5 mx-auto" style="max-width: 550px;">
+    <div class="d-inline-flex p-3 rounded-circle bg-danger-subtle text-danger mb-3">
+      <i class="bi bi-shield-lock-fill fs-1"></i>
+    </div>
+    <h3 class="fw-bold text-dark">403 – Access Forbidden</h3>
+    <p class="text-secondary small mb-4">
+      You do not have the required permissions to access this page. If you are an administrator, please authenticate through the designated admin portal.
+    </p>
+    <div>
+      <a href="{{ url_for('student.home') }}" class="btn btn-primary-cs btn-sm px-4">Return Home</a>
+      <a href="{{ url_for('auth.admin_login') }}" class="btn btn-outline-cs btn-sm px-3 ms-2">Admin Portal</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

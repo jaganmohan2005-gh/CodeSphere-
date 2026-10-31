@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found (404) – CodeSphere{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center">
+  <div class="card-cs p-5 mx-auto" style="max-width: 550px;">
+    <div class="d-inline-flex p-3 rounded-circle bg-warning-subtle text-warning mb-3">
+      <i class="bi bi-compass-fill fs-1"></i>
+    </div>
+    <h3 class="fw-bold text-dark">404 – Page Not Found</h3>
+    <p class="text-secondary small mb-4">
+      The resource, problem, or assessment you are attempting to access does not exist or may have been relocated.
+    </p>
+    <div>
+      <a href="{{ url_for('student.home') }}" class="btn btn-primary-cs btn-sm px-4">Back to Dashboard</a>
+      <a href="{{ url_for('student.practice_list') }}" class="btn btn-outline-cs btn-sm px-3 ms-2">Browse Problems</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Test Cases: {{ question.title }} – CodeSphere Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="mb-3">
+    <a href="{{ url_for('admin.questions_list') }}" class="text-decoration-none text-muted small">
+      <i class="bi bi-arrow-left me-1"></i> Back to Question Bank
+    </a>
+  </div>
+
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h3 class="fw-bold mb-1 text-dark">Test Cases &bull; {{ question.title }}</h3>
+      <p class="text-muted small mb-0">Configure public sample cases and protected hidden evaluation test cases</p>
+    </div>
+    <div>
+      <span class="badge badge-diff-{{ question.difficulty|lower }} fs-6">{{ question.difficulty }}</span>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left Column: Add New Test Case Form -->
+    <div class="col-lg-5">
+      <div class="card-cs">
+        <div class="card-cs-header">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-plus-circle text-primary me-2"></i> Add New Test Case</h6>
+        </div>
+        <div class="card-cs-body">
+          <form method="POST">
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-secondary">{{ form.input_data.label.text }} *</label>
+              {{ form.input_data(class="form-control font-monospace", rows=3, placeholder="Input passed via stdin...") }}
+              {% for error in form.input_data.errors %}
+                <div class="text-danger small mt-1">{{ error }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-secondary">{{ form.expected_output.label.text }} *</label>
+              {{ form.expected_output(class="form-control font-monospace", rows=3, placeholder="Exact expected output via stdout...") }}
+              {% for error in form.expected_output.errors %}
+                <div class="text-danger small mt-1">{{ error }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.points.label.text }}</label>
+                {{ form.points(class="form-control") }}
+              </div>
+
+              <div class="col-md-6 mb-3 d-flex align-items-center pt-3">
+                <div class="form-check">
+                  {{ form.is_hidden(class="form-check-input") }}
+                  <label class="form-check-label small fw-semibold text-secondary" for="{{ form.is_hidden.id }}">
+                    Hidden Test Case
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-grid mt-2">
+              {{ form.submit(class="btn btn-primary-cs") }}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Current Test Cases List -->
+    <div class="col-lg-7">
+      <div class="card-cs">
+        <div class="card-cs-header d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-shield-check text-primary me-2"></i> Active Test Cases ({{ test_cases|length }})</h6>
+        </div>
+        <div class="card-cs-body p-0">
+          {% if test_cases %}
+            <div class="list-group list-group-flush">
+              {% for tc in test_cases %}
+                <div class="list-group-item p-3">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                      <span class="fw-bold me-2">Case #{{ loop.index }}</span>
+                      {% if tc.is_hidden %}
+                        <span class="badge badge-warning-soft"><i class="bi bi-eye-slash-fill me-1"></i> Hidden Grading Case</span>
+                      {% else %}
+                        <span class="badge badge-success-soft"><i class="bi bi-eye-fill me-1"></i> Public Sample Case</span>
+                      {% endif %}
+                      <span class="badge bg-light text-secondary ms-1">{{ tc.points }} pts</span>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('admin.test_case_delete', test_case_id=tc.id) }}" onsubmit="return confirm('Delete this test case?');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" title="Delete Test Case">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                  </div>
+
+                  <div class="row g-2 font-monospace small">
+                    <div class="col-md-6">
+                      <div class="text-secondary fw-bold" style="font-size:0.75rem;">INPUT:</div>
+                      <div class="bg-light p-2 rounded border" style="white-space: pre-wrap; max-height:100px; overflow-y:auto;">{{ tc.input_data }}</div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="text-secondary fw-bold" style="font-size:0.75rem;">EXPECTED OUTPUT:</div>
+                      <div class="bg-light p-2 rounded border" style="white-space: pre-wrap; max-height:100px; overflow-y:auto;">{{ tc.expected_output }}</div>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center py-5 text-muted">
+              No test cases created yet. Add one using the form on the left.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

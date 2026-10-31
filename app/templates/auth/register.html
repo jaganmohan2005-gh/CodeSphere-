@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Create Student Account – CodeSphere{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+      <div class="card-cs shadow-md">
+        <div class="card-cs-body p-4 p-md-5">
+          <div class="text-center mb-4">
+            <div class="brand-badge mb-3 d-inline-flex px-3 py-2">
+              <i class="bi bi-code-square fs-4"></i>
+              <span class="fs-5">CodeSphere</span>
+            </div>
+            <h4 class="fw-bold text-dark">Create Your Student Account</h4>
+            <p class="text-muted small">Join thousands of students cracking placements with intelligent AI coaching</p>
+          </div>
+
+          <form method="POST" action="{{ url_for('auth.register') }}">
+            {{ form.hidden_tag() }}
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.username.label.text }} *</label>
+                {{ form.username(class="form-control", placeholder="aarav2026", autofocus=True) }}
+                {% for error in form.username.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.email.label.text }} *</label>
+                {{ form.email(class="form-control", placeholder="aarav@college.edu") }}
+                {% for error in form.email.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-secondary">{{ form.full_name.label.text }} *</label>
+              {{ form.full_name(class="form-control", placeholder="Aarav Sharma") }}
+              {% for error in form.full_name.errors %}
+                <div class="text-danger small mt-1">{{ error }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="row">
+              <div class="col-md-7 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.college.label.text }}</label>
+                {{ form.college(class="form-control", placeholder="National Institute of Technology") }}
+                {% for error in form.college.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-md-5 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.graduation_year.label.text }}</label>
+                {{ form.graduation_year(class="form-control", placeholder="2026") }}
+                {% for error in form.graduation_year.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-secondary">{{ form.target_role.label.text }}</label>
+              {{ form.target_role(class="form-select") }}
+              {% for error in form.target_role.errors %}
+                <div class="text-danger small mt-1">{{ error }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.password.label.text }} *</label>
+                {{ form.password(class="form-control", placeholder="Min 8 characters") }}
+                {% for error in form.password.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-md-6 mb-4">
+                <label class="form-label small fw-semibold text-secondary">{{ form.confirm_password.label.text }} *</label>
+                {{ form.confirm_password(class="form-control", placeholder="Repeat password") }}
+                {% for error in form.confirm_password.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="d-grid mb-3">
+              {{ form.submit(class="btn btn-primary-cs py-2") }}
+            </div>
+          </form>
+
+          <div class="text-center pt-3 border-top">
+            <span class="text-muted small">Already have an account?</span>
+            <a href="{{ url_for('auth.login') }}" class="fw-semibold text-primary small text-decoration-none ms-1">Sign In</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

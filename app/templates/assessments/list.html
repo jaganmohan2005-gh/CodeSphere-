@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Timed Assessments – CodeSphere{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h3 class="fw-bold mb-1 text-dark">Timed Coding Assessments</h3>
+      <p class="text-muted small mb-0">Simulated placement drive rounds with strict server-side deadline enforcement</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    {% if assessments %}
+      {% for asm in assessments %}
+        {% set att = user_attempts.get(asm.id) %}
+        <div class="col-md-6 col-xl-4">
+          <div class="card-cs h-100 d-flex flex-column">
+            <div class="card-cs-header d-flex justify-content-between align-items-center">
+              <span class="badge badge-diff-{{ asm.difficulty|lower }}">{{ asm.difficulty }}</span>
+              <span class="badge bg-light text-dark font-monospace"><i class="bi bi-clock me-1"></i> {{ asm.duration_minutes }} mins</span>
+            </div>
+
+            <div class="card-cs-body flex-grow-1">
+              <h5 class="fw-bold text-dark mb-2">{{ asm.title }}</h5>
+              <p class="text-secondary small mb-3" style="min-height: 40px;">
+                {{ asm.description[:120] if asm.description else 'Formal timed technical evaluation testing core algorithms and problem solving.' }}...
+              </p>
+
+              <div class="p-3 bg-light rounded border mb-3 small">
+                <div class="d-flex justify-content-between mb-1">
+                  <span class="text-muted">Questions:</span>
+                  <span class="fw-bold">{{ asm.question_count }} Problems</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                  <span class="text-muted">Total Score:</span>
+                  <span class="fw-bold">{{ asm.total_marks }} Marks</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <span class="text-muted">Passing Score:</span>
+                  <span class="fw-bold">{{ asm.pass_percentage }}%</span>
+                </div>
+              </div>
+
+              {% if att %}
+                {% if att.status == 'in_progress' %}
+                  <div class="alert alert-warning py-2 small mb-0">
+                    <i class="bi bi-stopwatch-fill me-1"></i> <strong>In Progress:</strong> Session active!
+                  </div>
+                {% else %}
+                  <div class="alert {% if att.is_passed %}alert-success{% else %}alert-danger{% endif %} py-2 small mb-0 d-flex justify-content-between align-items-center">
+                    <span><strong>Completed:</strong> {{ att.percentage }}%</span>
+                    <span class="badge {% if att.is_passed %}bg-success{% else %}bg-danger{% endif %}">{{ 'PASSED' if att.is_passed else 'FAILED' }}</span>
+                  </div>
+                {% endif %}
+              {% endif %}
+            </div>
+
+            <div class="card-footer bg-white border-top p-3">
+              {% if att and att.status == 'in_progress' %}
+                <a href="{{ url_for('assessment.take_assessment', attempt_id=att.id) }}" class="btn btn-warning w-100 fw-bold">
+                  <i class="bi bi-play-circle-fill me-1"></i> Resume Assessment
+                </a>
+              {% elif att and not asm.retake_allowed %}
+                <a href="{{ url_for('assessment.view_result', attempt_id=att.id) }}" class="btn btn-outline-cs w-100">
+                  <i class="bi bi-file-earmark-check me-1"></i> View Result Report
+                </a>
+              {% else %}
+                <form method="POST" action="{{ url_for('assessment.start_assessment', assessment_id=asm.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-primary-cs w-100">
+                    <i class="bi bi-play-fill me-1"></i> {% if att and asm.retake_allowed %}Retake Assessment{% else %}Start Timed Assessment{% endif %}
+                  </button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="col-12">
+        <div class="card-cs text-center py-5">
+          <i class="bi bi-award fs-1 text-secondary mb-2"></i>
+          <h5 class="fw-bold">No Published Assessments</h5>
+          <p class="text-muted small">Check back soon or practice with our coding problem catalog in the meantime.</p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

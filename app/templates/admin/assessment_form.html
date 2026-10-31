@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Timed Assessment – CodeSphere Admin{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="mb-3">
+        <a href="{{ url_for('admin.assessments_list') }}" class="text-decoration-none text-muted small">
+          <i class="bi bi-arrow-left me-1"></i> Back to Assessments
+        </a>
+      </div>
+
+      <div class="card-cs">
+        <div class="card-cs-header">
+          <h5 class="mb-0 fw-bold"><i class="bi bi-award text-primary me-2"></i> {{ action }} Timed Assessment</h5>
+          <span class="text-muted small">Define duration, select questions, and configure scoring rules</span>
+        </div>
+
+        <div class="card-cs-body">
+          <form method="POST">
+            {{ form.hidden_tag() }}
+
+            <div class="row">
+              <div class="col-md-8 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.title.label.text }} *</label>
+                {{ form.title(class="form-control", placeholder="e.g. Campus Placement Screening Assessment 2026") }}
+                {% for error in form.title.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.difficulty.label.text }}</label>
+                {{ form.difficulty(class="form-select") }}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-secondary">{{ form.description.label.text }}</label>
+              {{ form.description(class="form-control", rows=3, placeholder="Instructions for candidates, topics covered, and assessment rules...") }}
+            </div>
+
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.duration_minutes.label.text }} *</label>
+                <div class="input-group">
+                  {{ form.duration_minutes(class="form-control") }}
+                  <span class="input-group-text">minutes</span>
+                </div>
+                {% for error in form.duration_minutes.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.pass_percentage.label.text }} *</label>
+                <div class="input-group">
+                  {{ form.pass_percentage(class="form-control") }}
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+
+              <div class="col-md-4 mb-3 d-flex flex-column justify-content-center">
+                <div class="form-check mb-1">
+                  {{ form.results_released_immediately(class="form-check-input") }}
+                  <label class="form-check-label small text-secondary" for="{{ form.results_released_immediately.id }}">
+                    Immediate Result Release
+                  </label>
+                </div>
+                <div class="form-check">
+                  {{ form.retake_allowed(class="form-check-input") }}
+                  <label class="form-check-label small text-secondary" for="{{ form.retake_allowed.id }}">
+                    Allow Multiple Retakes
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <!-- Question Bank Selector -->
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-check2-square text-primary me-2"></i> Select Assessment Questions & Allocate Marks</h6>
+                <span class="text-muted small">Choose at least one question from the question bank</span>
+              </div>
+
+              <div class="border rounded p-3 bg-light" style="max-height: 380px; overflow-y: auto;">
+                {% if questions %}
+                  <div class="row g-2">
+                    {% for q in questions %}
+                      <div class="col-md-12">
+                        <div class="card p-2 border">
+                          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                              <input type="checkbox" name="selected_questions" value="{{ q.id }}" id="q_{{ q.id }}" class="form-check-input mt-0" style="width:18px; height:18px;">
+                              <label for="q_{{ q.id }}" class="form-check-label mb-0 fw-semibold cursor-pointer">
+                                {{ q.title }}
+                              </label>
+                              <span class="badge badge-diff-{{ q.difficulty|lower }}">{{ q.difficulty }}</span>
+                              <span class="badge badge-primary-soft">{{ q.category.name }}</span>
+                              <span class="text-muted small">({{ q.test_cases|length }} test cases)</span>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-1">
+                              <label class="small text-muted me-1">Marks:</label>
+                              <input type="number" name="marks_{{ q.id }}" value="25" min="1" max="100" class="form-control form-control-sm text-center" style="width: 70px;">
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <div class="text-center py-4 text-muted">
+                    No coding questions available. Please create questions in the question bank first.
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="mb-4 form-check">
+              {{ form.is_published(class="form-check-input") }}
+              <label class="form-check-label small fw-semibold text-secondary" for="{{ form.is_published.id }}">
+                Publish Assessment immediately (Notifies students and makes visible in assessment portal)
+              </label>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+              <a href="{{ url_for('admin.assessments_list') }}" class="btn btn-outline-cs">Cancel</a>
+              {{ form.submit(class="btn btn-primary-cs px-4") }}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

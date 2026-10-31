@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}{{ question.title }} – CodeSphere Practice{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 py-3">
+  <!-- Top Bar with Navigation and Problem Title -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{{ url_for('student.practice_list') }}" class="btn btn-outline-secondary btn-sm" title="Back to Problem Bank">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+      <h5 class="fw-bold mb-0 text-dark">{{ question.title }}</h5>
+      <span class="badge badge-diff-{{ question.difficulty|lower }}">{{ question.difficulty }}</span>
+      <span class="badge badge-primary-soft">{{ question.category.name }}</span>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#aiHintModal">
+        <i class="bi bi-lightbulb-fill text-warning me-1"></i> Request AI Hint
+      </button>
+      <a href="{{ url_for('student.submissions_history') }}" class="btn btn-outline-cs btn-sm">
+        <i class="bi bi-clock-history me-1"></i> Submissions
+      </a>
+    </div>
+  </div>
+
+  <!-- Split Screen Workbench -->
+  <div class="workbench-container">
+    <!-- Left Panel: Problem Statement & Sample Test Cases -->
+    <div class="problem-panel">
+      <div class="mb-4">
+        <h6 class="fw-bold text-dark mb-2">Problem Statement</h6>
+        <div class="text-secondary" style="white-space: pre-line; line-height: 1.6;">
+          {{ question.description }}
+        </div>
+      </div>
+
+      {% if question.constraints %}
+        <div class="mb-4">
+          <h6 class="fw-bold text-dark mb-2">Constraints</h6>
+          <pre class="bg-light p-3 rounded font-monospace small border text-dark">{{ question.constraints }}</pre>
+        </div>
+      {% endif %}
+
+      {% if question.sample_input or question.sample_output %}
+        <div class="mb-4">
+          <h6 class="fw-bold text-dark mb-2">Sample Input & Output</h6>
+          <div class="row g-2 font-monospace small">
+            <div class="col-md-6">
+              <div class="d-flex justify-content-between align-items-center text-muted mb-1">
+                <span>SAMPLE INPUT</span>
+                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" onclick="copySnippet('sampleInputText', this)">
+                  <i class="bi bi-clipboard"></i> Copy
+                </button>
+              </div>
+              <pre id="sampleInputText" class="bg-light p-2 rounded border mb-0" style="max-height:120px; overflow-y:auto;">{{ question.sample_input }}</pre>
+            </div>
+
+            <div class="col-md-6">
+              <div class="d-flex justify-content-between align-items-center text-muted mb-1">
+                <span>SAMPLE OUTPUT</span>
+                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" onclick="copySnippet('sampleOutputText', this)">
+                  <i class="bi bi-clipboard"></i> Copy
+                </button>
+              </div>
+              <pre id="sampleOutputText" class="bg-light p-2 rounded border mb-0" style="max-height:120px; overflow-y:auto;">{{ question.sample_output }}</pre>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      {% if question.explanation %}
+        <div class="mb-4">
+          <h6 class="fw-bold text-dark mb-2">Explanation</h6>
+          <div class="p-3 bg-light rounded border small text-secondary">
+            {{ question.explanation }}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="p-3 bg-light rounded border small text-muted">
+        <div><strong>Expected Time Complexity:</strong> <span class="font-monospace text-dark">{{ question.time_complexity_expected or 'O(N)' }}</span></div>
+        <div><strong>Expected Space Complexity:</strong> <span class="font-monospace text-dark">{{ question.space_complexity_expected or 'O(1)' }}</span></div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Code Editor & Sandboxed Runner -->
+    <div class="editor-panel">
+      <!-- Editor Toolbar -->
+      <div class="editor-toolbar">
+        <div class="d-flex align-items-center gap-2">
+          <label class="text-secondary small mb-0"><i class="bi bi-code-slash"></i> Language:</label>
+          <select id="editor-language" class="form-select form-select-sm bg-dark text-light border-secondary" style="width: 140px;">
+            <option value="python" selected>Python 3</option>
+            <option value="java">Java (Standard)</option>
+            <option value="cpp">C++ 17</option>
+          </select>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-outline-light btn-sm" onclick="resetStarterCode()">
+            <i class="bi bi-arrow-counterclockwise"></i> Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Code Textarea -->
+      <textarea id="practice-code-editor" class="code-textarea" spellcheck="false">{{ starter_code }}</textarea>
+
+      <!-- Terminal / Test Output -->
+      <div id="practice-terminal" class="terminal-panel">
+        <div class="text-secondary small mb-1">
+          <i class="bi bi-terminal"></i> Test Runner Output will appear here after clicking 'Run Sample Test' or 'Submit Solution'.
+        </div>
+      </div>
+
+      <!-- Action Buttons Footer -->
+      <div class="editor-footer">
+        <div class="small text-secondary" id="execution-status-pill">
+          Ready to run
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="button" id="btn-run-tests" class="btn btn-outline-light btn-sm px-3">
+            <i class="bi bi-play-fill"></i> Run Sample Test
+          </button>
+          <button type="button" id="btn-submit-solution" class="btn btn-primary-cs btn-sm px-4">
+            <i class="bi bi-cloud-arrow-up-fill me-1"></i> Submit Solution
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Progressive AI Hints -->
+<div class="modal fade" id="aiHintModal" tabindex="-1" aria-labelledby="aiHintModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h6 class="modal-title fw-bold" id="aiHintModalLabel"><i class="bi bi-lightbulb-fill text-warning me-2"></i> Progressive AI Coding Hints</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="small text-muted mb-3">Progressive hints guide you step-by-step without spoiling the full solution:</p>
+        <div class="d-flex gap-2 mb-3">
+          <button type="button" class="btn btn-outline-primary btn-sm flex-fill btn-practice-hint" data-level="1">
+            Hint 1: Intuition
+          </button>
+          <button type="button" class="btn btn-outline-primary btn-sm flex-fill btn-practice-hint" data-level="2">
+            Hint 2: Strategy
+          </button>
+          <button type="button" class="btn btn-outline-primary btn-sm flex-fill btn-practice-hint" data-level="3">
+            Hint 3: Edge Cases
+          </button>
+        </div>
+        <div id="modal-hint-output" class="p-3 bg-light rounded border small">
+          Select a hint level above to receive tailored coaching.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const questionSlug = "{{ question.slug }}";
+  const questionId = {{ question.id }};
+  const defaultStarterCode = `{{ question.starter_code_python|default('', true)|e }}`;
+
+  function resetStarterCode() {
+    if (confirm('Reset editor to initial starter template?')) {
+      document.getElementById('practice-code-editor').value = defaultStarterCode;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const runBtn = document.getElementById('btn-run-tests');
+    const submitBtn = document.getElementById('btn-submit-solution');
+    const editor = document.getElementById('practice-code-editor');
+    const terminal = document.getElementById('practice-terminal');
+    const statusPill = document.getElementById('execution-status-pill');
+
+    // 1. Run Sample Tests
+    runBtn.addEventListener('click', async function () {
+      runBtn.disabled = true;
+      runBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Running...';
+      statusPill.innerHTML = '<span class="spinner-grow spinner-grow-sm text-info"></span> Executing in isolated sandbox...';
+      terminal.innerHTML = '<div class="text-info">Executing solution against public sample test cases...</div>';
+
+      try {
+        const resp = await window.codesphereFetch(`/practice/${questionSlug}/run-tests`, {
+          method: 'POST',
+          body: JSON.stringify({
+            code: editor.value,
+            language: document.getElementById('editor-language').value
+          })
+        });
+
+        const data = await resp.json();
+        runBtn.disabled = false;
+        runBtn.innerHTML = '<i class="bi bi-play-fill"></i> Run Sample Test';
+        statusPill.innerHTML = `Finished in ${data.execution_time_ms} ms`;
+
+        renderTerminalOutput(data, false);
+      } catch (err) {
+        runBtn.disabled = false;
+        runBtn.innerHTML = '<i class="bi bi-play-fill"></i> Run Sample Test';
+        terminal.innerHTML = `<div class="text-danger">Execution error: ${err.message}</div>`;
+      }
+    });
+
+    // 2. Submit Solution (All test cases)
+    submitBtn.addEventListener('click', async function () {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Submitting...';
+      statusPill.innerHTML = '<span class="spinner-grow spinner-grow-sm text-primary"></span> Grading all test cases...';
+      terminal.innerHTML = '<div class="text-primary">Submitting solution for formal test verification...</div>';
+
+      try {
+        const resp = await window.codesphereFetch(`/practice/${questionSlug}/submit`, {
+          method: 'POST',
+          body: JSON.stringify({
+            code: editor.value,
+            language: document.getElementById('editor-language').value
+          })
+        });
+
+        const data = await resp.json();
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-1"></i> Submit Solution';
+        statusPill.innerHTML = `Result: ${data.status} (${data.tests_passed}/${data.tests_total} passed)`;
+
+        renderTerminalOutput(data, true);
+      } catch (err) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-1"></i> Submit Solution';
+        terminal.innerHTML = `<div class="text-danger">Submission error: ${err.message}</div>`;
+      }
+    });
+
+    function renderTerminalOutput(data, isSubmit) {
+      let badgeClass = data.status === 'Accepted' ? 'bg-success' : 'bg-danger';
+      let title = isSubmit ? 'Official Submission Result' : 'Sample Test Run Result';
+
+      let html = `<div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-secondary">
+        <div><strong>${title}:</strong> <span class="badge ${badgeClass}">${data.status}</span></div>
+        <div class="text-secondary small">Passed: ${data.tests_passed} / ${data.tests_total} &bull; ${data.execution_time_ms} ms</div>
+      </div>`;
+
+      if (data.error_message) {
+        html += `<div class="alert alert-danger py-2 mb-2 font-monospace small">${data.error_message}</div>`;
+      }
+
+      if (data.test_details && data.test_details.length > 0) {
+        data.test_details.forEach((tc, idx) => {
+          let tcBadge = tc.is_passed ? '<span class="badge bg-success">PASSED</span>' : '<span class="badge bg-danger">FAILED</span>';
+          let caseType = tc.is_hidden ? 'Hidden Grading Case' : 'Sample Case';
+
+          html += `
+            <div class="card mb-2 bg-dark text-light border-secondary">
+              <div class="card-header py-1 d-flex justify-content-between align-items-center" style="font-size:0.8rem;">
+                <span>${caseType} #${idx + 1}</span>
+                ${tcBadge}
+              </div>
+              <div class="card-body p-2 font-monospace" style="font-size:0.78rem;">
+                <div><span class="text-secondary">Input:</span> ${tc.input_data}</div>
+                <div><span class="text-secondary">Expected:</span> ${tc.expected_output}</div>
+                <div><span class="text-secondary">Actual:</span> ${tc.actual_output || 'None'}</div>
+              </div>
+            </div>`;
+        });
+      }
+
+      terminal.innerHTML = html;
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    // 3. Modal Hint Handler
+    document.querySelectorAll('.btn-practice-hint').forEach(btn => {
+      btn.addEventListener('click', async function () {
+        const level = this.getAttribute('data-level');
+        const modalOutput = document.getElementById('modal-hint-output');
+        modalOutput.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Generating hint...';
+
+        try {
+          const resp = await window.codesphereFetch('/ai/hint', {
+            method: 'POST',
+            body: JSON.stringify({
+              question_id: questionId,
+              hint_level: level,
+              current_code: editor.value
+            })
+          });
+          const d = await resp.json();
+          if (resp.ok) {
+            modalOutput.innerHTML = `<div class="fw-bold mb-1 text-primary">Hint Level ${d.hint_level}:</div><div>${d.hint.replace(/\n/g, '<br>')}</div>`;
+          } else {
+            modalOutput.innerHTML = `<div class="text-danger">${d.error}</div>`;
+          }
+        } catch (e) {
+          modalOutput.innerHTML = `<div class="text-danger">${e.message}</div>`;
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

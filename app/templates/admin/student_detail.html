@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Student: {{ student.username }} – CodeSphere Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="mb-3">
+    <a href="{{ url_for('admin.students_list') }}" class="text-decoration-none text-muted small">
+      <i class="bi bi-arrow-left me-1"></i> Back to Student Directory
+    </a>
+  </div>
+
+  <!-- Header Card with Account Activation Toggle -->
+  <div class="card-cs mb-4">
+    <div class="card-cs-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center" style="width:58px; height:58px; font-size:1.5rem;">
+          {{ student.username[0]|upper }}
+        </div>
+        <div>
+          <h4 class="fw-bold mb-0 text-dark">{{ student.profile.full_name if student.profile else student.username }}</h4>
+          <div class="text-muted small">@{{ student.username }} &bull; {{ student.email }}</div>
+          <div class="mt-1">
+            {% if student.is_active_account %}
+              <span class="badge badge-success-soft"><i class="bi bi-check-circle-fill me-1"></i> Active Student Account</span>
+            {% else %}
+              <span class="badge badge-danger-soft"><i class="bi bi-x-circle-fill me-1"></i> Account Deactivated</span>
+            {% endif %}
+            {% if student.profile and student.profile.college %}
+              <span class="badge badge-secondary-soft ms-1">{{ student.profile.college }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <form method="POST" action="{{ url_for('admin.toggle_student_status', student_id=student.id) }}" onsubmit="return confirm('Are you sure you want to change this student\'s account status?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          {% if student.is_active_account %}
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+              <i class="bi bi-person-x-fill me-1"></i> Deactivate Account
+            </button>
+          {% else %}
+            <button type="submit" class="btn btn-success btn-sm">
+              <i class="bi bi-person-check-fill me-1"></i> Activate Account
+            </button>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real-Time Metrics Calculated from DB -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-title">Questions Attempted</div>
+        <div class="kpi-value">{{ analytics.total_attempted }}</div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+      <div class="kpi-card kpi-success">
+        <div class="kpi-title">Questions Solved</div>
+        <div class="kpi-value">{{ analytics.total_solved }}</div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+      <div class="kpi-card kpi-cyan">
+        <div class="kpi-title">Accuracy Rate</div>
+        <div class="kpi-value">{{ analytics.accuracy_percentage }}%</div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+      <div class="kpi-card kpi-purple">
+        <div class="kpi-title">Avg Assessment Score</div>
+        <div class="kpi-value">{{ analytics.avg_assessment_score }}%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two Column Layout: Assessment History & Topic Performance -->
+  <div class="row g-3 mb-4">
+    <!-- Assessment History -->
+    <div class="col-lg-6">
+      <div class="card-cs h-100">
+        <div class="card-cs-header">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-award text-primary me-2"></i> Assessment History</h6>
+        </div>
+        <div class="table-responsive">
+          <table class="table-cs mb-0">
+            <thead>
+              <tr>
+                <th>Assessment</th>
+                <th>Score</th>
+                <th>Status</th>
+                <th>Attempt Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if analytics.assessment_history %}
+                {% for att in analytics.assessment_history %}
+                  <tr>
+                    <td><strong>{{ att.assessment.title }}</strong></td>
+                    <td>
+                      <span class="fw-bold {% if att.is_passed %}text-success{% else %}text-danger{% endif %}">
+                        {{ att.percentage }}% ({{ att.total_score }}/{{ att.max_possible_score }})
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge badge-soft {% if att.is_passed %}badge-success-soft{% else %}badge-warning-soft{% endif %}">
+                        {{ att.status }}
+                      </span>
+                    </td>
+                    <td class="small text-muted">{{ att.created_at.strftime('%b %d, %Y') }}</td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-muted">No completed assessments recorded.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Topic Breakdown -->
+    <div class="col-lg-6">
+      <div class="card-cs h-100">
+        <div class="card-cs-header">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart text-primary me-2"></i> Category Performance Breakdown</h6>
+        </div>
+        <div class="card-cs-body">
+          {% if analytics.topic_performance %}
+            <div class="d-flex flex-column gap-3">
+              {% for topic in analytics.topic_performance %}
+                {% if topic.attempted > 0 %}
+                  <div>
+                    <div class="d-flex justify-content-between align-items-center mb-1 small">
+                      <span class="fw-bold">{{ topic.name }}</span>
+                      <span>{{ topic.solved }} / {{ topic.attempted }} solved ({{ topic.accuracy }}%)</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                      <div class="progress-bar {% if topic.accuracy >= 70 %}bg-success{% elif topic.accuracy >= 40 %}bg-primary{% else %}bg-warning{% endif %}" role="progressbar" style="width: {{ topic.accuracy }}%"></div>
+                    </div>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-muted text-center py-4">No coding activity in categories yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

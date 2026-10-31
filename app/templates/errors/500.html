@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error (500) – CodeSphere{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center">
+  <div class="card-cs p-5 mx-auto" style="max-width: 550px;">
+    <div class="d-inline-flex p-3 rounded-circle bg-danger-subtle text-danger mb-3">
+      <i class="bi bi-gear-wide-connected fs-1"></i>
+    </div>
+    <h3 class="fw-bold text-dark">500 – Internal Server Error</h3>
+    <p class="text-secondary small mb-4">
+      An unexpected internal condition occurred. The active transaction has been safely rolled back to preserve data integrity.
+    </p>
+    <div>
+      <a href="{{ url_for('student.home') }}" class="btn btn-primary-cs btn-sm px-4">Return Home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Coding Question – CodeSphere Admin{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="mb-3">
+        <a href="{{ url_for('admin.questions_list') }}" class="text-decoration-none text-muted small">
+          <i class="bi bi-arrow-left me-1"></i> Back to Question Bank
+        </a>
+      </div>
+
+      <div class="card-cs">
+        <div class="card-cs-header">
+          <h5 class="mb-0 fw-bold"><i class="bi bi-journal-code text-primary me-2"></i> {{ action }} Coding Question</h5>
+          <span class="text-muted small">Configure problem statement, complexity targets, and starter templates</span>
+        </div>
+        <div class="card-cs-body">
+          <form method="POST">
+            {{ form.hidden_tag() }}
+
+            <div class="row">
+              <div class="col-md-7 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.title.label.text }} *</label>
+                {{ form.title(class="form-control", placeholder="e.g. Valid Anagram String") }}
+                {% for error in form.title.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-md-3 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.category_id.label.text }} *</label>
+                {{ form.category_id(class="form-select") }}
+                {% for error in form.category_id.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-md-2 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.difficulty.label.text }}</label>
+                {{ form.difficulty(class="form-select") }}
+                {% for error in form.difficulty.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-secondary">{{ form.description.label.text }} *</label>
+              {{ form.description(class="form-control", rows=6, placeholder="Detailed problem statement. Markdown formatted descriptions are supported.") }}
+              {% for error in form.description.errors %}
+                <div class="text-danger small mt-1">{{ error }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-secondary">{{ form.constraints.label.text }}</label>
+              {{ form.constraints(class="form-control", rows=2, placeholder="e.g. 1 <= nums.length <= 10^5\n-10^9 <= nums[i] <= 10^9") }}
+              {% for error in form.constraints.errors %}
+                <div class="text-danger small mt-1">{{ error }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.sample_input.label.text }}</label>
+                {{ form.sample_input(class="form-control font-monospace", rows=3, placeholder="Standard input (stdin)") }}
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.sample_output.label.text }}</label>
+                {{ form.sample_output(class="form-control font-monospace", rows=3, placeholder="Expected output (stdout)") }}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-secondary">{{ form.explanation.label.text }}</label>
+              {{ form.explanation(class="form-control", rows=2, placeholder="Provide a brief explanation of why the sample output matches the input.") }}
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.time_complexity_expected.label.text }}</label>
+                {{ form.time_complexity_expected(class="form-control font-monospace", placeholder="O(N)") }}
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.space_complexity_expected.label.text }}</label>
+                {{ form.space_complexity_expected(class="form-control font-monospace", placeholder="O(1)") }}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-secondary">{{ form.starter_code_python.label.text }}</label>
+              {{ form.starter_code_python(class="form-control font-monospace", rows=6, placeholder="# Python 3 starter template\nimport sys\n\ndef solve():\n    pass\n\nif __name__ == '__main__':\n    solve()") }}
+            </div>
+
+            <div class="mb-4 form-check">
+              {{ form.is_published(class="form-check-input") }}
+              <label class="form-check-label small fw-semibold text-secondary" for="{{ form.is_published.id }}">
+                Publish Question (Make visible in practice problem bank and assessment question pickers)
+              </label>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+              <a href="{{ url_for('admin.questions_list') }}" class="btn btn-outline-cs">Cancel</a>
+              {{ form.submit(class="btn btn-primary-cs px-4") }}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

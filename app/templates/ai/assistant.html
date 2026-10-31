@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}AI Placement Mentor – CodeSphere{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <h3 class="fw-bold mb-0 text-dark">AI Placement Assistant & Tutor</h3>
+        {% if openai_configured %}
+          <span class="badge bg-success-subtle text-success border border-success-subtle">
+            <i class="bi bi-stars me-1"></i> OpenAI Engine Active
+          </span>
+        {% else %}
+          <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+            <i class="bi bi-cpu me-1"></i> Offline Fallback Engine Active
+          </span>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">Ask programming questions, request progressive coding hints, diagnose runtime bugs, and generate study plans</p>
+    </div>
+
+    <div>
+      <form method="POST" action="{{ url_for('ai.new_conversation') }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline-cs btn-sm">
+          <i class="bi bi-plus-lg me-1"></i> New Chat Session
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- AI Tutor Tabs -->
+  <ul class="nav nav-pills mb-4 gap-2" id="aiTutorTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active fw-semibold" id="chat-tab" data-bs-toggle="pill" data-bs-target="#chat-pane" type="button" role="tab">
+        <i class="bi bi-chat-dots-fill me-1"></i> Concept Tutor
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link fw-semibold" id="hints-tab" data-bs-toggle="pill" data-bs-target="#hints-pane" type="button" role="tab">
+        <i class="bi bi-lightbulb-fill me-1"></i> Progressive Hints
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link fw-semibold" id="debugger-tab" data-bs-toggle="pill" data-bs-target="#debugger-pane" type="button" role="tab">
+        <i class="bi bi-bug-fill me-1"></i> Code Error Diagnoser
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link fw-semibold" id="plan-tab" data-bs-toggle="pill" data-bs-target="#plan-pane" type="button" role="tab">
+        <i class="bi bi-calendar-check-fill me-1"></i> Adaptive Study Plan
+      </button>
+    </li>
+  </ul>
+
+  <!-- Tab Contents -->
+  <div class="tab-content" id="aiTutorTabsContent">
+    <!-- TAB 1: Real-Time Concept Tutor & Chat -->
+    <div class="tab-pane fade show active" id="chat-pane" role="tabpanel">
+      <div class="row g-3">
+        <!-- Left: Conversation History List -->
+        <div class="col-lg-3">
+          <div class="card-cs h-100">
+            <div class="card-cs-header">
+              <h6 class="mb-0 fw-bold small text-secondary">
+                <i class="bi bi-clock-history me-1"></i> Past Sessions
+              </h6>
+            </div>
+            <div class="card-cs-body p-2" style="max-height: 480px; overflow-y: auto;">
+              {% if conversations %}
+                <div class="list-group list-group-flush">
+                  {% for conv in conversations %}
+                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-2 rounded mb-1 {% if active_conv and active_conv.id == conv.id %}bg-primary-soft text-primary fw-bold{% endif %}">
+                      <a href="{{ url_for('ai.assistant', conv_id=conv.id) }}" class="text-decoration-none text-dark flex-grow-1 small text-truncate pe-2">
+                        {{ conv.title }}
+                      </a>
+                      <form method="POST" action="{{ url_for('ai.delete_conversation', conv_id=conv.id) }}" onsubmit="return confirm('Delete this conversation?');" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-link btn-sm text-muted p-0" title="Delete">
+                          <i class="bi bi-trash" style="font-size:0.8rem;"></i>
+                        </button>
+                      </form>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="text-center py-4 text-muted small">No past sessions yet.</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Active Chat Window -->
+        <div class="col-lg-9">
+          <div class="chat-window">
+            <div class="card-cs-header py-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+              <div>
+                <span class="fw-bold text-dark">{{ active_conv.title if active_conv else 'New Learning Session' }}</span>
+                <span class="badge bg-light text-muted ms-2 small">{{ active_conv.messages|length if active_conv else 0 }} messages</span>
+              </div>
+            </div>
+
+            <!-- Messages Stream -->
+            <div class="chat-messages" id="chat-messages-container">
+              {% if active_conv and active_conv.messages %}
+                {% for msg in active_conv.messages %}
+                  <div class="message-bubble message-{{ msg.sender }}">
+                    {% if msg.sender == 'assistant' %}
+                      <div class="d-flex align-items-center mb-1 text-muted" style="font-size:0.75rem;">
+                        <strong>CodeSphere Tutor</strong>
+                        {% if msg.is_fallback %}
+                          <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-2">
+                            <i class="bi bi-cpu"></i> Fallback Tutor Engine
+                          </span>
+                        {% else %}
+                          <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-2">
+                            <i class="bi bi-stars"></i> OpenAI AI Tutor
+                          </span>
+                        {% endif %}
+                      </div>
+                    {% endif %}
+                    <div style="white-space: pre-line; line-height: 1.55;">{{ msg.content }}</div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="text-center py-5 text-muted">
+                  <div class="rounded-circle bg-primary-subtle text-primary p-3 d-inline-flex mb-3">
+                    <i class="bi bi-chat-quote-fill fs-3"></i>
+                  </div>
+                  <h6 class="fw-bold text-dark">Ask Any Computer Science or Placement Question</h6>
+                  <p class="small text-muted mb-3" style="max-width: 480px; margin: 0 auto;">
+                    Try asking about data structures, algorithmic complexities, OOP principles, SQL queries, or interview problem strategies.
+                  </p>
+                  <div class="d-flex flex-wrap justify-content-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="quickAsk('Explain how Hash Map collision resolution works with separate chaining')">
+                      "Hash Map Collisions"
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="quickAsk('Explain Binary Search Tree vs AVL Tree differences')">
+                      "BST vs AVL Trees"
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="quickAsk('Explain Kadane algorithm for Maximum Subarray problem')">
+                      "Kadane's Algorithm"
+                    </button>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Chat Input Bar -->
+            <form id="ai-chat-form" class="chat-input-bar">
+              <input type="hidden" id="active-conversation-id" value="{{ active_conv.id if active_conv else '' }}">
+              <input type="text" id="ai-chat-input" class="form-control" placeholder="Ask a question about Python, Java, DSA, Dynamic Programming, SQL..." autocomplete="off">
+              <button type="submit" class="btn btn-primary-cs px-4">
+                <i class="bi bi-send-fill"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: Progressive Coding Hints -->
+    <div class="tab-pane fade" id="hints-pane" role="tabpanel">
+      <div class="card-cs">
+        <div class="card-cs-header">
+          <h5 class="mb-0 fw-bold"><i class="bi bi-lightbulb-fill text-warning me-2"></i> Progressive Coding Hints</h5>
+          <span class="text-muted small">Receive non-spoiler clues graduated from conceptual intuition to edge cases</span>
+        </div>
+        <div class="card-cs-body">
+          <form id="ai-hint-form" class="mb-4">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold text-secondary">Select Problem</label>
+                <select id="hint-question-select" class="form-select">
+                  <option value="">-- Choose a coding question --</option>
+                  {% for q in questions %}
+                    <option value="{{ q.id }}">{{ q.title }} ({{ q.difficulty }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold text-secondary">Request Hint Level</label>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-outline-primary btn-sm flex-fill btn-request-hint" data-level="1">
+                    Level 1: Intuition
+                  </button>
+                  <button type="button" class="btn btn-outline-primary btn-sm flex-fill btn-request-hint" data-level="2">
+                    Level 2: Strategy
+                  </button>
+                  <button type="button" class="btn btn-outline-primary btn-sm flex-fill btn-request-hint" data-level="3">
+                    Level 3: Edge Cases
+                  </button>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label small fw-semibold text-secondary">Your Current Code (Optional)</label>
+                <textarea id="hint-code-input" class="form-control font-monospace" rows="3" placeholder="Paste your code so the tutor can calibrate hints to your progress..."></textarea>
+              </div>
+            </div>
+          </form>
+
+          <div id="hint-output-container">
+            <div class="p-4 bg-light text-center rounded border text-muted small">
+              Select a question and click a hint level above to receive progressive guidance.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Code Error Diagnoser -->
+    <div class="tab-pane fade" id="debugger-pane" role="tabpanel">
+      <div class="card-cs">
+        <div class="card-cs-header">
+          <h5 class="mb-0 fw-bold"><i class="bi bi-bug-fill text-danger me-2"></i> Code Error & Logic Diagnoser</h5>
+          <span class="text-muted small">Automated educational code review to explain runtime exceptions and logical bugs</span>
+        </div>
+        <div class="card-cs-body">
+          <div class="row g-3 mb-3">
+            <div class="col-md-8">
+              <label class="form-label small fw-semibold text-secondary">Your Code *</label>
+              <textarea id="debug-code-input" class="form-control font-monospace" rows="7" placeholder="# Paste your buggy code snippet here..."></textarea>
+            </div>
+
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="form-label small fw-semibold text-secondary">Programming Language</label>
+                <select id="debug-language-select" class="form-select">
+                  <option value="python" selected>Python 3</option>
+                  <option value="java">Java</option>
+                  <option value="cpp">C++</option>
+                  <option value="sql">SQL</option>
+                </select>
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label small fw-semibold text-secondary">Error Message / Status</label>
+                <input type="text" id="debug-error-msg" class="form-control font-monospace small" placeholder="e.g. IndexError: list index out of range">
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label small fw-semibold text-secondary">Expected Output (Optional)</label>
+                <input type="text" id="debug-expected-output" class="form-control font-monospace small" placeholder="e.g. 6">
+              </div>
+
+              <div>
+                <label class="form-label small fw-semibold text-secondary">Actual Output (Optional)</label>
+                <input type="text" id="debug-actual-output" class="form-control font-monospace small" placeholder="e.g. -2">
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end mb-4">
+            <button type="button" id="btn-run-diagnostics" class="btn btn-primary-cs px-4">
+              <i class="bi bi-lightning-charge-fill me-1"></i> Diagnose Code Issues
+            </button>
+          </div>
+
+          <div id="debug-output-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: Adaptive Study Plan Generator -->
+    <div class="tab-pane fade" id="plan-pane" role="tabpanel">
+      <div class="card-cs">
+        <div class="card-cs-header">
+          <h5 class="mb-0 fw-bold"><i class="bi bi-calendar-check text-primary me-2"></i> Adaptive Placement Study Plan</h5>
+          <span class="text-muted small">Constructed dynamically using your real accuracy and weak topic analytics</span>
+        </div>
+        <div class="card-cs-body">
+          <div class="row g-3 align-items-end mb-4">
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary">Target Placement Role</label>
+              <input type="text" id="plan-target-role" class="form-control" value="{{ current_user.profile.target_role or 'Software Engineer' }}">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary">Preparation Timeframe</label>
+              <select id="plan-weeks-select" class="form-select">
+                <option value="2">2 Weeks (Intensive Final Sprint)</option>
+                <option value="4" selected>4 Weeks (Standard Preparation)</option>
+                <option value="8">8 Weeks (Comprehensive Campus Drive Track)</option>
+                <option value="12">12 Weeks (Zero to SDE Masterclass)</option>
+              </select>
+            </div>
+
+            <div class="col-md-4">
+              <button type="button" id="btn-generate-plan" class="btn btn-primary-cs w-100 py-2">
+                <i class="bi bi-stars me-1"></i> Formulate Study Roadmap
+              </button>
+            </div>
+          </div>
+
+          <div id="study-plan-output">
+            <div class="p-4 bg-light text-center rounded border text-muted small">
+              Click 'Formulate Study Roadmap' above to generate an actionable, week-by-week placement study schedule.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/ai_assistant.js') }}"></script>
+<script>
+  function quickAsk(text) {
+    const input = document.getElementById('ai-chat-input');
+    if (input) {
+      input.value = text;
+      document.getElementById('ai-chat-form').dispatchEvent(new Event('submit'));
+    }
+  }
+
+  // Handle URL hash tab switching (e.g. /ai#study-plan)
+  document.addEventListener('DOMContentLoaded', function () {
+    if (window.location.hash === '#study-plan') {
+      const planTab = document.getElementById('plan-tab');
+      if (planTab) {
+        new bootstrap.Tab(planTab).show();
+      }
+    }
+  });
+</script>
+{% endblock %}

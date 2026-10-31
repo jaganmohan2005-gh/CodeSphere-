@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment: {{ assessment.title }} – CodeSphere{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Distraction-free assessment styling */
+  .assessment-header {
+    background: #0f172a;
+    color: #ffffff;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 2px solid #2563eb;
+  }
+  .q-nav-pill {
+    padding: 0.4rem 0.85rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #334155;
+    transition: all 0.2s;
+  }
+  .q-nav-pill.active {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+  }
+  .q-nav-pill.attempted {
+    border-left: 4px solid #10b981;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Assessment Live Control Bar -->
+<div class="assessment-header sticky-top">
+  <div class="container-fluid d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-danger">LIVE ASSESSMENT</span>
+        <h5 class="fw-bold mb-0 text-white">{{ assessment.title }}</h5>
+      </div>
+      <div class="small text-secondary">
+        Candidate: <strong>{{ current_user.username }}</strong> &bull; Server-side deadline enforced
+      </div>
+    </div>
+
+    <!-- Timer and Status Center -->
+    <div class="d-flex align-items-center gap-3">
+      <div id="autosave-status" class="small text-secondary d-none d-md-block">
+        <i class="bi bi-check-circle-fill text-success"></i> Answers autosaved
+      </div>
+
+      <div class="timer-box" id="assessment-timer">
+        --:--:--
+      </div>
+
+      <button type="button" class="btn btn-danger btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
+        <i class="bi bi-check2-circle me-1"></i> Finish & Submit
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid px-3 py-3">
+  <!-- Question Navigator Strip -->
+  <div class="card-cs mb-3 p-2">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="text-secondary small fw-bold me-1">QUESTIONS:</span>
+        {% for aq in aq_list %}
+          {% set ans = answers_map.get(aq.question_id) %}
+          {% set is_curr = (loop.index == current_q_idx) %}
+          {% set is_att = ans and ans.is_attempted %}
+          
+          <a href="{{ url_for('assessment.take_assessment', attempt_id=attempt.id, q=loop.index) }}" 
+             class="q-nav-pill {% if is_curr %}active{% endif %} {% if is_att %}attempted{% endif %}"
+             title="Question {{ loop.index }}: {{ aq.question.title }}">
+            <span>Q{{ loop.index }}</span>
+            <span class="badge {% if is_curr %}bg-light text-dark{% else %}bg-secondary text-light{% endif %} p-1" style="font-size:0.7rem;">
+              {{ aq.marks }}m
+            </span>
+            {% if is_att %}
+              <i class="bi bi-check-circle-fill text-success" style="font-size:0.75rem;"></i>
+            {% endif %}
+          </a>
+        {% endfor %}
+      </div>
+
+      <div class="text-muted small">
+        Question <strong>{{ current_q_idx }}</strong> of <strong>{{ aq_list|length }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Question & Coding Workbench -->
+  <div class="workbench-container" style="height: calc(100vh - 200px);">
+    <!-- Left: Current Question Statement & Marks -->
+    <div class="problem-panel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold text-dark mb-0">{{ current_q_idx }}. {{ current_aq.question.title }}</h5>
+        <div>
+          <span class="badge badge-diff-{{ current_aq.question.difficulty|lower }}">{{ current_aq.question.difficulty }}</span>
+          <span class="badge bg-primary text-white fw-bold">{{ current_aq.marks }} Marks</span>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <h6 class="fw-bold text-dark mb-2">Problem Description</h6>
+        <div class="text-secondary" style="white-space: pre-line; line-height: 1.6;">
+          {{ current_aq.question.description }}
+        </div>
+      </div>
+
+      {% if current_aq.question.constraints %}
+        <div class="mb-4">
+          <h6 class="fw-bold text-dark mb-2">Constraints</h6>
+          <pre class="bg-light p-3 rounded font-monospace small border text-dark">{{ current_aq.question.constraints }}</pre>
+        </div>
+      {% endif %}
+
+      {% if current_aq.question.sample_input or current_aq.question.sample_output %}
+        <div class="mb-4">
+          <h6 class="fw-bold text-dark mb-2">Sample Input & Output</h6>
+          <div class="row g-2 font-monospace small">
+            <div class="col-md-6">
+              <div class="text-muted mb-1">SAMPLE INPUT</div>
+              <pre class="bg-light p-2 rounded border mb-0" style="max-height:120px; overflow-y:auto;">{{ current_aq.question.sample_input }}</pre>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted mb-1">SAMPLE OUTPUT</div>
+              <pre class="bg-light p-2 rounded border mb-0" style="max-height:120px; overflow-y:auto;">{{ current_aq.question.sample_output }}</pre>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="alert alert-secondary small mb-0">
+        <i class="bi bi-shield-lock-fill me-1"></i> Official grading uses hidden test cases that evaluate edge conditions and asymptotic complexities.
+      </div>
+    </div>
+
+    <!-- Right: Code Editor & Auto-Saver -->
+    <div class="editor-panel">
+      <div class="editor-toolbar">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-dark border border-secondary text-light font-monospace">Python 3 (Sandboxed)</span>
+          <span class="text-muted small">&bull; Q{{ current_q_idx }} Solution Script</span>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" id="btn-manual-save" class="btn btn-outline-light btn-sm" title="Manually save your code">
+            <i class="bi bi-floppy"></i> Save Draft
+          </button>
+        </div>
+      </div>
+
+      <!-- Editor Textarea -->
+      <textarea id="assessment-code-editor" class="code-textarea" spellcheck="false">{{ current_answer.code if current_answer else '' }}</textarea>
+
+      <!-- Sample Test Case Runner Panel -->
+      <div id="sample-test-output" class="terminal-panel" style="max-height: 160px;">
+        <div class="text-secondary small">
+          <i class="bi bi-play-circle me-1"></i> You can test your code against public sample cases by clicking 'Run Sample Test' below.
+        </div>
+      </div>
+
+      <div class="editor-footer">
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" id="btn-run-sample" class="btn btn-outline-light btn-sm">
+            <i class="bi bi-play-fill"></i> Run Sample Test
+          </button>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          {% if current_q_idx > 1 %}
+            <a href="{{ url_for('assessment.take_assessment', attempt_id=attempt.id, q=current_q_idx - 1) }}" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-arrow-left"></i> Prev
+            </a>
+          {% endif %}
+
+          {% if current_q_idx < aq_list|length %}
+            <a href="{{ url_for('assessment.take_assessment', attempt_id=attempt.id, q=current_q_idx + 1) }}" class="btn btn-primary-cs btn-sm">
+              Next <i class="bi bi-arrow-right"></i>
+            </a>
+          {% else %}
+            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
+              Review & Submit
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Final Submission Modal -->
+<div class="modal fade" id="confirmSubmitModal" tabindex="-1" aria-labelledby="confirmSubmitModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h6 class="modal-title fw-bold" id="confirmSubmitModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i> Confirm Assessment Submission</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="mb-3">Are you ready to submit your assessment? Once submitted, your answers will be evaluated and your attempt will be finalized.</p>
+        
+        <div class="card bg-light p-3 border mb-3 small">
+          <div class="d-flex justify-content-between mb-1">
+            <span>Total Questions:</span>
+            <strong>{{ aq_list|length }}</strong>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span>Remaining Time:</span>
+            <strong id="modal-remaining-time">--:--</strong>
+          </div>
+        </div>
+        <p class="text-danger small mb-0"><strong>Note:</strong> You cannot resume or edit answers after submitting.</p>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Continue Assessment</button>
+        <form id="final-submit-form" method="POST" action="{{ url_for('assessment.submit_assessment', attempt_id=attempt.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-danger btn-sm px-4 fw-bold">Submit Final Assessment</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/assessment.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const config = {
+      attemptId: {{ attempt.id }},
+      questionId: {{ current_aq.question_id }},
+      remainingSeconds: {{ remaining_seconds }},
+      autosaveUrl: "{{ url_for('assessment.autosave_answer', attempt_id=attempt.id) }}",
+      submitUrl: "{{ url_for('assessment.submit_assessment', attempt_id=attempt.id) }}",
+      runSampleUrl: "{{ url_for('assessment.run_sample_tests', attempt_id=attempt.id) }}"
+    };
+    new AssessmentController(config);
+  });
+</script>
+{% endblock %}

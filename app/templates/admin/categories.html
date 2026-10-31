@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Category Management – CodeSphere Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h3 class="fw-bold mb-1 text-dark">Topic Categories</h3>
+      <p class="text-muted small mb-0">Curate computer science subjects, algorithms, data structures, and languages</p>
+    </div>
+    <div>
+      <a href="{{ url_for('admin.category_create') }}" class="btn btn-primary-cs btn-sm">
+        <i class="bi bi-plus-lg me-1"></i> Add Category
+      </a>
+    </div>
+  </div>
+
+  <div class="card-cs">
+    <div class="table-responsive">
+      <table class="table-cs mb-0">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Slug</th>
+            <th>Description</th>
+            <th>Question Count</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if categories %}
+            {% for cat in categories %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="rounded p-2 bg-primary-subtle text-primary">
+                      <i class="bi {{ cat.icon }} fs-5"></i>
+                    </div>
+                    <div>
+                      <span class="fw-bold text-dark">{{ cat.name }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td><code class="small">{{ cat.slug }}</code></td>
+                <td class="small text-secondary" style="max-width: 320px;">{{ cat.description or 'No description provided.' }}</td>
+                <td>
+                  <span class="badge badge-primary-soft">{{ cat.question_count }} Questions</span>
+                </td>
+                <td class="text-end">
+                  <div class="d-inline-flex gap-1">
+                    <a href="{{ url_for('admin.category_edit', category_id=cat.id) }}" class="btn btn-outline-cs btn-sm" title="Edit Category">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    
+                    {% if cat.can_be_safely_deleted() %}
+                      <form method="POST" action="{{ url_for('admin.category_delete', category_id=cat.id) }}" onsubmit="return confirm('Are you sure you want to delete this empty category?');" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Category">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </form>
+                    {% else %}
+                      <button type="button" class="btn btn-outline-secondary btn-sm" disabled title="Cannot delete: contains active questions">
+                        <i class="bi bi-lock-fill"></i>
+                      </button>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="5" class="text-center py-5 text-muted">No categories created yet. Click 'Add Category' above.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

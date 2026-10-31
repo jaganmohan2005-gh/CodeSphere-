@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Student Management – CodeSphere Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h3 class="fw-bold mb-1 text-dark">Registered Students</h3>
+      <p class="text-muted small mb-0">Manage enrolled student accounts, monitor activity, and configure permissions</p>
+    </div>
+  </div>
+
+  <!-- Search and Filter Bar -->
+  <div class="card-cs mb-4">
+    <div class="card-cs-body py-3">
+      <form method="GET" action="{{ url_for('admin.students_list') }}" class="row g-2 align-items-center">
+        <div class="col-md-6 col-lg-4">
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+            <input type="text" name="q" class="form-control border-start-0" placeholder="Search by name, username or email..." value="{{ search_query }}">
+          </div>
+        </div>
+
+        <div class="col-md-4 col-lg-3">
+          <select name="status" class="form-select" onchange="this.form.submit()">
+            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Account Statuses</option>
+            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Only</option>
+            <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Deactivated Only</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary-cs btn-sm w-100 py-2">Filter</button>
+        </div>
+
+        {% if search_query or status_filter != 'all' %}
+          <div class="col-md-2">
+            <a href="{{ url_for('admin.students_list') }}" class="btn btn-outline-cs btn-sm w-100 py-2">Clear</a>
+          </div>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <!-- Students Table -->
+  <div class="card-cs">
+    <div class="table-responsive">
+      <table class="table-cs mb-0">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Email</th>
+            <th>College / Degree</th>
+            <th>Target Role</th>
+            <th>Status</th>
+            <th>Joined</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if students %}
+            {% for s in students %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width:34px; height:34px; font-size:0.85rem;">
+                      {{ s.username[0]|upper }}
+                    </div>
+                    <div>
+                      <div class="fw-bold">{{ s.profile.full_name if s.profile else s.username }}</div>
+                      <div class="text-muted small">@{{ s.username }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="small">{{ s.email }}</td>
+                <td class="small">
+                  {% if s.profile and s.profile.college %}
+                    <div>{{ s.profile.college }}</div>
+                    {% if s.profile.graduation_year %}<span class="badge bg-light text-secondary">Class '{{ s.profile.graduation_year }}</span>{% endif %}
+                  {% else %}
+                    <span class="text-muted">Not specified</span>
+                  {% endif %}
+                </td>
+                <td class="small">
+                  {% if s.profile and s.profile.target_role %}
+                    <span class="badge badge-primary-soft">{{ s.profile.target_role }}</span>
+                  {% else %}
+                    <span class="badge badge-secondary-soft">General</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if s.is_active_account %}
+                    <span class="badge badge-success-soft"><i class="bi bi-check-circle-fill me-1"></i> Active</span>
+                  {% else %}
+                    <span class="badge badge-danger-soft"><i class="bi bi-x-circle-fill me-1"></i> Deactivated</span>
+                  {% endif %}
+                </td>
+                <td class="text-muted small">{{ s.created_at.strftime('%b %d, %Y') }}</td>
+                <td class="text-end">
+                  <a href="{{ url_for('admin.student_detail', student_id=s.id) }}" class="btn btn-outline-cs btn-sm">
+                    <i class="bi bi-eye me-1"></i> View Analytics
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">
+                <i class="bi bi-people fs-2 d-block mb-2 text-secondary"></i>
+                No student accounts matched your query.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

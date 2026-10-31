@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile – CodeSphere{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row">
+    <!-- Left Sidebar: Profile Card -->
+    <div class="col-md-4 mb-4">
+      <div class="card-cs text-center p-4">
+        <div class="mx-auto rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 80px; height: 80px; font-size: 2rem; font-weight: 700;">
+          {{ current_user.username[0]|upper }}
+        </div>
+        <h5 class="fw-bold mb-1">{{ profile.full_name or current_user.username }}</h5>
+        <div class="text-muted small mb-2">@{{ current_user.username }}</div>
+        <div>
+          <span class="badge badge-primary-soft">{{ profile.target_role or 'Aspiring Software Engineer' }}</span>
+        </div>
+
+        <hr class="my-3">
+
+        <div class="text-start small text-secondary">
+          <div class="mb-2"><i class="bi bi-envelope me-2 text-primary"></i> {{ current_user.email }}</div>
+          {% if profile.college %}
+            <div class="mb-2"><i class="bi bi-mortarboard me-2 text-primary"></i> {{ profile.college }}</div>
+          {% endif %}
+          {% if profile.graduation_year %}
+            <div class="mb-2"><i class="bi bi-calendar-event me-2 text-primary"></i> Class of {{ profile.graduation_year }}</div>
+          {% endif %}
+          <div class="mb-2"><i class="bi bi-terminal me-2 text-primary"></i> Preferred: <strong>{{ profile.preferred_language|capitalize }}</strong></div>
+        </div>
+
+        {% if profile.github_url or profile.linkedin_url %}
+          <div class="d-flex justify-content-center gap-2 mt-3">
+            {% if profile.github_url %}
+              <a href="{{ profile.github_url }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-github"></i></a>
+            {% endif %}
+            {% if profile.linkedin_url %}
+              <a href="{{ profile.linkedin_url }}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-linkedin"></i></a>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right Column: Edit Profile Form -->
+    <div class="col-md-8">
+      <div class="card-cs">
+        <div class="card-cs-header">
+          <h5 class="mb-0 fw-bold"><i class="bi bi-person-gear text-primary me-2"></i> Edit Student Profile</h5>
+          <span class="text-muted small">Update your career goals & portfolio links</span>
+        </div>
+        <div class="card-cs-body">
+          <form method="POST" action="{{ url_for('auth.profile') }}">
+            {{ form.hidden_tag() }}
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.full_name.label.text }} *</label>
+                {{ form.full_name(class="form-control") }}
+                {% for error in form.full_name.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.target_role.label.text }}</label>
+                {{ form.target_role(class="form-select") }}
+                {% for error in form.target_role.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.college.label.text }}</label>
+                {{ form.college(class="form-control") }}
+                {% for error in form.college.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-md-3 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.degree.label.text }}</label>
+                {{ form.degree(class="form-control", placeholder="B.Tech CSE") }}
+                {% for error in form.degree.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-md-3 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.graduation_year.label.text }}</label>
+                {{ form.graduation_year(class="form-control") }}
+                {% for error in form.graduation_year.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.preferred_language.label.text }}</label>
+                {{ form.preferred_language(class="form-select") }}
+                {% for error in form.preferred_language.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-secondary">{{ form.github_url.label.text }}</label>
+                {{ form.github_url(class="form-control", placeholder="https://github.com/username") }}
+                {% for error in form.github_url.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-secondary">{{ form.linkedin_url.label.text }}</label>
+              {{ form.linkedin_url(class="form-control", placeholder="https://linkedin.com/in/username") }}
+              {% for error in form.linkedin_url.errors %}
+                <div class="text-danger small mt-1">{{ error }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label small fw-semibold text-secondary">{{ form.bio.label.text }}</label>
+              {{ form.bio(class="form-control", rows=3, placeholder="Tell recruiters and peers about your technical passions and goals...") }}
+              {% for error in form.bio.errors %}
+                <div class="text-danger small mt-1">{{ error }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="d-flex justify-content-end">
+              {{ form.submit(class="btn btn-primary-cs px-4") }}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
